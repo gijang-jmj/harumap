@@ -123,7 +123,7 @@ com/yourdomain/harumap/
   "datetime": "2025-06-26T14:30:00",
   "category": "etc",
   "isShared": false,
-  "createdAt": Timestamp
+  "createdAt": "2025-06-26T14:30:00",
 }
 ```
 
@@ -144,7 +144,7 @@ com/yourdomain/harumap/
 
 | 주차  | 목표 |
 |-------|------|
-| 1주차 | UI 설계 (Figma), 프로젝트 구조 세팅 |
+| 1주차 | 프로젝트 구조 세팅 |
 | 2주차 | 기록 등록 화면, 이미지 처리, Firebase 연동 |
 | 3주차 | 지도 뷰 + 클러스터링, 하루지도 표시 |
 | 4주차 | 달지도 구현, 최적화, 출시 준비 |
