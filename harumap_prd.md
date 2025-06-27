@@ -153,4 +153,4 @@ com/yourdomain/harumap/
 
 ## ✉️ API 명세
 
-→ 별도 문서 참고: harumap_api_spec.md
+→ 별도 문서 참고: [harumap_api_spec.md](https://github.com/gijang-jmj/harumap/blob/main/harumap_api_spec.md)
