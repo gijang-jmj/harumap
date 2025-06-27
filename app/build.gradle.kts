@@ -76,4 +76,5 @@ dependencies {
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation(libs.play.services.maps)
     implementation(libs.maps.compose)
+    implementation(libs.accompanist.permissions)
 }
