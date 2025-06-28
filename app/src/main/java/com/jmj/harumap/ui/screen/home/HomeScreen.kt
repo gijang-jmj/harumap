@@ -1,7 +1,8 @@
 package com.jmj.harumap.ui.screen.home
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -20,12 +21,12 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.exifinterface.media.ExifInterface
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
@@ -39,14 +40,19 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.jmj.harumap.R
+import com.jmj.harumap.data.model.ImageCandidate
 
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
 @OptIn(ExperimentalPermissionsApi::class)
 @Composable
 fun HomeScreen() {
     // 위치 권한 요청을 위한 상태
     val locationPermissionState =
         rememberPermissionState(android.Manifest.permission.ACCESS_FINE_LOCATION)
-    val isGranted = locationPermissionState.status.isGranted
+
+    // 이미지 권한 요청을 위한 상태 (Android 14 이상에서 필요)
+    val mediaPermissionState =
+        rememberPermissionState(android.Manifest.permission.READ_MEDIA_IMAGES)
 
     // 다크 모드에 따라 지도 스타일을 설정
     val context = LocalContext.current
@@ -59,9 +65,19 @@ fun HomeScreen() {
 
     // HomeScreen이 켜지면 바로 권한 요청
     LaunchedEffect(Unit) {
-        if (!isGranted) {
+        if (!locationPermissionState.status.isGranted) {
             locationPermissionState.launchPermissionRequest()
         }
+        if (!mediaPermissionState.status.isGranted) {
+            mediaPermissionState.launchPermissionRequest()
+        }
+    }
+
+    // 이미지 후보 리스트를 상태로 관리
+    val (imageCandidateList, setImageCandidateList) = androidx.compose.runtime.remember {
+        androidx.compose.runtime.mutableStateOf(
+            listOf<ImageCandidate>()
+        )
     }
 
     Scaffold(
@@ -87,7 +103,7 @@ fun HomeScreen() {
                 properties = MapProperties(
                     isBuildingEnabled = true,
                     mapStyleOptions = mapStyleOptions,
-                    isMyLocationEnabled = isGranted
+                    isMyLocationEnabled = locationPermissionState.status.isGranted
                 ),
                 uiSettings = MapUiSettings(
                     tiltGesturesEnabled = false,
@@ -96,11 +112,14 @@ fun HomeScreen() {
                     myLocationButtonEnabled = false
                 )
             ) {
-                Marker(
-                    state = remember { MarkerState(position = gigang) },
-                    title = "Singapore",
-                    snippet = "Marker in Singapore"
-                )
+                // imageCandidateList의 각 위치에 마커 추가
+                imageCandidateList.forEach { candidate ->
+                    Marker(
+                        state = MarkerState(position = candidate.latLng),
+                        title = candidate.date,
+                        snippet = candidate.uri.toString()
+                    )
+                }
             }
 
             // 상단 safety area에 Row 플로팅 UI
@@ -129,26 +148,69 @@ fun HomeScreen() {
                 modifier = Modifier
                     .fillMaxWidth()
                     .align(Alignment.BottomCenter)
-                    .padding(16.dp)
-                    .padding(bottom = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(16.dp),
                 horizontalAlignment = Alignment.End,
             ) {
                 SmallFloatingActionButton(onClick = {
-                    // 일상 작성 버튼 클릭 시 동작 구현
-                    // 예: 일상 작성 화면으로 이동
+                    // MediaStore에서 이미지 URI 리스트 가져오기
+                    val projection = arrayOf(
+                        android.provider.MediaStore.Images.Media._ID,
+                        android.provider.MediaStore.Images.Media.DATE_ADDED
+                    )
+                    val cursor = context.contentResolver.query(
+                        android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI,
+                        projection,
+                        null,
+                        null,
+                        "${android.provider.MediaStore.Images.Media.DATE_ADDED} DESC"
+                    )
+                    val uriList = mutableListOf<android.net.Uri>()
+                    cursor?.use {
+                        val idColumn =
+                            it.getColumnIndexOrThrow(android.provider.MediaStore.Images.Media._ID)
+                        while (it.moveToNext()) {
+                            val id = it.getLong(idColumn)
+                            val contentUri = android.content.ContentUris.withAppendedId(
+                                android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, id
+                            )
+                            uriList.add(contentUri)
+                        }
+                    }
+
+                    android.util.Log.d(
+                        "MediaStore",
+                        "uriList: ${uriList.size}"
+                    )
+
+                    // Exif 정보로 후보군 필터링
+                    val newList = uriList.take(100).mapNotNull { uri ->
+                        try {
+                            val inputStream = context.contentResolver.openInputStream(uri)
+                            inputStream?.use { stream ->
+                                val exif = ExifInterface(stream)
+                                val datetime =
+                                    exif.getAttribute(ExifInterface.TAG_DATETIME_ORIGINAL)
+                                        ?: return@mapNotNull null
+                                val latLong = exif.getLatLong() ?: return@mapNotNull null
+
+                                ImageCandidate(
+                                    uri = uri,
+                                    date = datetime,
+                                    latLng = LatLng(latLong[0], latLong[1]),
+                                )
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("MediaStore", "Error reading Exif for $uri", e)
+                            return@mapNotNull null
+                        }
+                    }
+                    setImageCandidateList(newList)
+                    android.util.Log.d(
+                        "MediaStore",
+                        "imageCandidateList: ${newList.size}"
+                    )
                 }) {
                     Icon(imageVector = Icons.Default.Edit, contentDescription = "일상작성")
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    // 예시: 네비게이션 아이템 3개 (아이콘/텍스트 등)
-                    Card { Text("홈", modifier = Modifier.padding(12.dp)) }
-                    Card { Text("검색", modifier = Modifier.padding(12.dp)) }
-                    Card { Text("내정보", modifier = Modifier.padding(12.dp)) }
                 }
             }
         }
