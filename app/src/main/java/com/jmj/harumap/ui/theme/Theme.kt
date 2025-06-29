@@ -7,27 +7,28 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 
-private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF5EC8E5),
-    onPrimary = Color.Black,
-    background = Color(0xFF121212),  // 머티리얼 다크 기본
-    onBackground = Color(0xFFE0E0E0),
-    surface = Color(0xFF1E1E1E),
-    onSurface = Color(0xFFE0E0E0),
-    error = Color(0xFFF97066),
-    onError = Color.Black
-)
-
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF5EC8E5),     // 민트 블루
+    primary = Color(0xFF5EC8E5),
     onPrimary = Color.White,
-    background = Color(0xFFF9FAFB),  // 연한 회백색
-    onBackground = Color(0xFF1C1B1F),
+    background = Color.White,
+    onBackground = Color(0xFF1A1A1A),
     surface = Color.White,
-    onSurface = Color(0xFF1C1B1F),
-    error = Color(0xFFF97066),       // 소프트 레드
+    onSurface = Color(0xFF1A1A1A),
+    error = Color(0xFFF97066),
     onError = Color.White
 )
+
+private val DarkColorScheme = darkColorScheme(
+    primary = Color(0xFF5EC8E5),
+    onPrimary = Color(0xFF1A1A1A),
+    background = Color(0xFF1A1A1A),
+    onBackground = Color.White,
+    surface = Color(0xFF1A1A1A),
+    onSurface = Color.White,
+    error = Color(0xFFF97066),
+    onError = Color.White
+)
+
 
 @Composable
 fun HarumapTheme(

@@ -1,0 +1,32 @@
+<!-- res/layout/custom_marker.xml -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:gravity="center_horizontal"
+    android:orientation="vertical">
+
+    <!-- 썸네일 이미지 (border 3dp + image 40dp) -->
+    <FrameLayout
+        android:layout_width="88dp"
+        android:layout_height="88dp"
+        android:background="@drawable/bg_marker_border"
+        android:padding="4dp">
+
+        <ImageView
+            android:id="@+id/marker_image"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:contentDescription="@string/marker_thumbnail"
+            android:scaleType="centerCrop"
+            android:src="@drawable/sample_marker" />
+    </FrameLayout>
+
+    <!-- 역삼각형 -->
+    <ImageView
+        android:id="@+id/marker_tail"
+        android:layout_width="12dp"
+        android:layout_height="8dp"
+        android:contentDescription="@string/marker_tail"
+        android:scaleType="fitXY"
+        android:src="@drawable/triangle_tail" />
+</LinearLayout>

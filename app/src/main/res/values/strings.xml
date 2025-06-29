@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">harumap</string>
+    <string name="marker_thumbnail">marker_thumbnail</string>
+    <string name="marker_tail">marker_tail</string>
 </resources>
